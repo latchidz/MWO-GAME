@@ -11,8 +11,8 @@ android {
         applicationId = "com.latchi.mwo"
         minSdk = 21
         targetSdk = 34
-        versionCode = (System.getenv("BUILD_VERSION_CODE")?.toIntOrNull() ?: 1)
-        versionName = (System.getenv("BUILD_VERSION_NAME") ?: "1.0.0")
+        versionCode = (System.getenv("BUILD_VERSION_CODE")?.toIntOrNull() ?: 2026083102)
+        versionName = (System.getenv("BUILD_VERSION_NAME") ?: "1.0.1")
     }
 
     signingConfigs {
@@ -46,5 +46,5 @@ android {
 }
 
 dependencies {
-    implementation("androidx.annotation:annotation:1.7.1")
+    implementation("androidx.browser:browser:1.8.0")
 }

@@ -1,227 +1,130 @@
 package com.latchi.mwo
 
-import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.Intent
 import android.graphics.Color
 import android.net.Uri
-import android.os.Build
 import android.os.Bundle
-import android.view.KeyEvent
-import android.view.View
-import android.view.WindowManager
-import android.webkit.CookieManager
-import android.webkit.PermissionRequest
-import android.webkit.WebChromeClient
-import android.webkit.WebResourceRequest
-import android.webkit.WebSettings
-import android.webkit.WebView
-import android.webkit.WebViewClient
-import android.widget.FrameLayout
+import android.content.pm.PackageManager
+import android.view.Gravity
+import android.widget.Button
+import android.widget.ImageView
+import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
+import androidx.browser.customtabs.CustomTabsIntent
 
 /**
- * NFS Most Wanted — غلاف أندرويد أصلي.
- *
- * الأهداف:
- *  1) تُفتح اللعبة مباشرة على وضع اللاعب الواحد (single player) بلا صفحة أزرار.
- *  2) تحميل الموارد (~2GB) يحدث مرة واحدة فقط ويُحفظ في تخزين التطبيق،
- *     فلا يُعاد التحميل عند إغلاق اللعبة وفتحها من جديد.
- *  3) اللعبة تبقى "شغالة" في الخلفية: لا تُدمَّر عند الخروج، والرجوع إليها فوري.
- *  4) استخدام كامل للشاشة في الوضع الأفقي، مع الاستمرار في العمل أثناء التنزيل.
+ * Lightweight native launcher for the online NFS Most Wanted browser game.
+ * The game itself is intentionally opened in a real Chrome Custom Tab (or
+ * the user's default browser), not Android WebView. The site needs a modern,
+ * top-level browser context for its cross-origin-isolated WebAssembly runtime.
+ * Cache and game files belong to Chrome/browser storage and remain there across
+ * launches; this app does not claim to download or own the game assets.
  */
 class MainActivity : Activity() {
 
-    private lateinit var web: WebView
-    private lateinit var splash: View
-
-    // بيانات جهاز ثابتة: تُحقن مرة واحدة فقط حتى تبقى الجلسة والتخزين كما هما
-    private val deviceOverrides = mutableSetOf<String>()
-
-    @SuppressLint("SetJavaScriptEnabled")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        requestedOrientation = android.content.pm.ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
+        makeLauncherScreen()
 
-        window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
-        goFullscreen()
+        // Open the game immediately on fresh launch, then leave a clear resume button behind.
+        if (savedInstanceState == null) openGame()
+    }
 
-        val root = FrameLayout(this).apply { setBackgroundColor(Color.BLACK) }
-
-        // ── شاشة انتظار بسيطة تختفي عند جاهزية اللعبة ──
-        splash = TextView(this).apply {
-            text = "NFS MOST WANTED"
-            setTextColor(Color.parseColor("#E8E8E8"))
-            textSize = 20f
-            letterSpacing = 0.25f
-            gravity = android.view.Gravity.CENTER
-            setBackgroundColor(Color.BLACK)
+    private fun makeLauncherScreen() {
+        val root = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            gravity = Gravity.CENTER
+            setPadding(dp(28), dp(20), dp(28), dp(20))
+            setBackgroundColor(Color.rgb(8, 10, 13))
         }
-        root.addView(splash, FrameLayout.LayoutParams(-1, -1))
 
-        web = WebView(this)
-        root.addView(web, FrameLayout.LayoutParams(-1, -1))
+        val logo = ImageView(this).apply {
+            setImageResource(R.mipmap.ic_launcher)
+            scaleType = ImageView.ScaleType.CENTER_CROP
+            contentDescription = "Need for Speed Most Wanted"
+        }
+        root.addView(logo, LinearLayout.LayoutParams(dp(128), dp(128)).apply {
+            bottomMargin = dp(14)
+        })
+
+        val title = TextView(this).apply {
+            text = "NEED FOR SPEED\nMOST WANTED"
+            textSize = 21f
+            setTextColor(Color.WHITE)
+            gravity = Gravity.CENTER
+            letterSpacing = 0.08f
+            setTypeface(typeface, android.graphics.Typeface.BOLD)
+        }
+        root.addView(title, LinearLayout.LayoutParams(-2, -2))
+
+        val subtitle = TextView(this).apply {
+            text = "لعبة أونلاين — تفتح في متصفح آمن متوافق مع اللعبة"
+            textSize = 14f
+            setTextColor(Color.rgb(185, 190, 197))
+            gravity = Gravity.CENTER
+            setPadding(0, dp(10), 0, dp(18))
+        }
+        root.addView(subtitle, LinearLayout.LayoutParams(-2, -2))
+
+        val button = Button(this).apply {
+            text = "افتح اللعبة / تابع اللعب"
+            textSize = 16f
+            setTextColor(Color.WHITE)
+            setBackgroundTintList(android.content.res.ColorStateList.valueOf(Color.rgb(22, 102, 195)))
+            setOnClickListener { openGame() }
+        }
+        root.addView(button, LinearLayout.LayoutParams(dp(300), dp(54)))
+
+        val note = TextView(this).apply {
+            text = "تُحمّل موارد اللعبة أونلاين وتُخزَّن في بيانات المتصفح.\nلا تمسح بيانات Chrome إذا أردت الاحتفاظ بالتخزين المحلي."
+            textSize = 12f
+            setTextColor(Color.rgb(145, 150, 157))
+            gravity = Gravity.CENTER
+            setPadding(0, dp(14), 0, 0)
+        }
+        root.addView(note, LinearLayout.LayoutParams(-2, -2))
+
         setContentView(root)
-
-        configureWebView()
-
-        if (savedInstanceState == null) startSinglePlayer() else web.reload()
     }
 
-    // ═══════════════ إعداد WebView ═══════════════
+    private fun openGame() {
+        try {
+            val builder = CustomTabsIntent.Builder()
+                .setToolbarColor(Color.rgb(8, 10, 13))
+                .setShowTitle(false)
+                .setUrlBarHidingEnabled(true)
+                .setShareState(CustomTabsIntent.SHARE_STATE_OFF)
+                .setColorScheme(CustomTabsIntent.COLOR_SCHEME_DARK)
+            val customTab = builder.build()
 
-    private fun configureWebView() {
-        val cm = CookieManager.getInstance()
-        cm.setAcceptCookie(true)
-        cm.setAcceptThirdPartyCookies(web, true)
-
-        web.settings.apply {
-            javaScriptEnabled = true
-            domStorageEnabled = true
-            databaseEnabled = true
-            javaScriptCanOpenWindowsAutomatically = true
-            setSupportMultipleWindows(false)
-            useWideViewPort = true
-            loadWithOverviewMode = true
-            mediaPlaybackRequiresUserGesture = false
-            cacheMode = WebSettings.LOAD_DEFAULT
-            allowFileAccess = false
-            allowContentAccess = false
-            mixedContentMode = WebSettings.MIXED_CONTENT_COMPATIBILITY_MODE
-            builtInZoomControls = false
-            displayZoomControls = false
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-                mixedContentMode = WebSettings.MIXED_CONTENT_COMPATIBILITY_MODE
+            // Prefer Chrome's full Chromium browser engine; if absent, let Android
+            // select the user's installed full browser through the standard view intent.
+            if (isPackageInstalled(CHROME_PACKAGE)) {
+                customTab.intent.setPackage(CHROME_PACKAGE)
             }
-            userAgentString = userAgentString + " LatchiMWO/1.0"
-        }
-
-        // حجم تخزين كبير: يحفظ موارد اللعبة (~2GB) داخل التطبيق
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            web.settings.textZoom = 100
-        }
-
-        web.setBackgroundColor(Color.BLACK)
-        web.overScrollMode = View.OVER_SCROLL_NEVER
-        web.isVerticalScrollBarEnabled = false
-        web.isHorizontalScrollBarEnabled = false
-
-        web.webChromeClient = object : WebChromeClient() {
-            override fun onPermissionRequest(request: PermissionRequest?) {
-                request?.grant(request.resources)
-            }
-            override fun onShowFileChooser(
-                webView: WebView?, filePathCallback: android.webkit.ValueCallback<Array<Uri>>?,
-                fileChooserParams: FileChooserParams?
-            ): Boolean = false
-        }
-
-        web.webViewClient = object : WebViewClient() {
-            override fun onPageFinished(view: WebView?, url: String?) {
-                splash.visibility = View.GONE
-                // نتأكد من وجود جلسة جهاز ثابتة (بعض المواقع تنشئها بكوكي)
-                ensurePersistentSession(url)
-            }
-
-            override fun shouldOverrideUrlLoading(view: WebView?, request: WebResourceRequest?): Boolean {
-                val u = request?.url?.toString() ?: return false
-                // خدمة الدفع/الحساب/المتجر تُفتح في المتصفح الخارجي
-                val external = listOf("plakmp.com", "paypal", "stripe", "google.com/accounts")
-                if (external.any { u.contains(it, true) }) {
-                    return try {
-                        startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(u))); true
-                    } catch (e: Exception) { true }
-                }
-                return false
+            customTab.launchUrl(this, Uri.parse(GAME_URL))
+        } catch (e: Exception) {
+            try {
+                startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(GAME_URL)))
+            } catch (_: Exception) {
+                Toast.makeText(this, "ثبّت Google Chrome أو متصفحًا حديثًا ثم أعد المحاولة", Toast.LENGTH_LONG).show()
             }
         }
     }
 
-    /** إن لم تكن كوكي الجهاز موجودة، نضعها بأنفسنا ونحفظها — فتبقى الجلسة بعد كل إغلاق. */
-    private fun ensurePersistentSession(url: String?) {
-        val host = try { Uri.parse(url ?: return).host ?: return } catch (e: Exception) { return }
-        val cm = CookieManager.getInstance()
-        if (cm.getCookie("https://$host")?.contains("pms_device") == true) return
-        // قيمة عشوائية ثابتة تُحفظ مع ملفات الموقع
-        val id = getSharedPreferences("mwo", MODE_PRIVATE)
-            .getString("device_id", null)
-            ?: java.util.UUID.randomUUID().toString().also {
-                getSharedPreferences("mwo", MODE_PRIVATE).edit().putString("device_id", it).apply()
-            }
-        cm.setCookie("https://$host", "pms_device=$id; Path=/; Max-Age=34560000; SameSite=None; Secure")
-        cm.flush()
-    }
+    @Suppress("DEPRECATION")
+    private fun isPackageInstalled(packageName: String): Boolean = try {
+        packageManager.getPackageInfo(packageName, PackageManager.GET_ACTIVITIES)
+        true
+    } catch (_: Exception) { false }
 
-    // ═══════════════ فتح اللعبة مباشرة على single player ═══════════════
-
-    private fun startSinglePlayer() {
-        // NOTE: لا نستعمل ?mode=single لأنه غير موثّق؛ نحقن اختيار "Single player"
-        // في الـ DOM عند جهوز الصفحة، ولا نلمس أي شيء آخر.
-        web.loadUrl(BASE_URL)
-    }
-
-    /**
-     * يضغط "Single player" أفضل من الاعتماد على نص الصفحة:
-     * نبحث عن العنصر حسب النص بعد أن تُصبح الصفحة جاهزة.
-     */
-    private fun clickSinglePlayer() {
-        web.evaluateJavascript(
-            """
-            (function(){
-              var els = Array.prototype.slice.call(document.querySelectorAll('button,a,div[role=button],span'));
-              for (var i=0;i<els.length;i++){
-                var t = (els[i].innerText||'').trim().toLowerCase();
-                if (t === 'single player' || t === 'لاعب واحد') { els[i].click(); return 'clicked'; }
-              }
-              return 'not-found';
-            })();
-            """.trimIndent(), null
-        )
-    }
-
-    // ═══════════════ دورة الحياة: اللعبة لا تُقطع ولا تُعاد من الأول ═══════════════
-
-    override fun onResume() {
-        super.onResume()
-        web.onResume()
-        web.resumeTimers()
-        goFullscreen()
-        // إن كان الخروج قصيرًا فالصفحة لم تُدمَّر ولا حاجة لإعادة التحميل
-    }
-
-    override fun onPause() {
-        // نحفظ كل شيء (cookies + localStorage) قبل أن نُخفى
-        CookieManager.getInstance().flush()
-        web.onPause()
-        // لا نستدعي web.clearCache ولا destroy — التخزين يبقى
-        super.onPause()
-    }
-
-    override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
-        if (keyCode == KeyEvent.KEYCODE_BACK) {
-            // رجوع = إلى الخلف داخل اللعبة فقط؛ بلا خروج من التطبيق
-            if (web.canGoBack()) web.goBack() else Toast.makeText(this, "الرجوع من زر الرئيسية يُبقي اللعبة شغالة", Toast.LENGTH_SHORT).show()
-            return true
-        }
-        return super.onKeyDown(keyCode, event)
-    }
-
-    override fun onWindowFocusChanged(hasFocus: Boolean) {
-        super.onWindowFocusChanged(hasFocus)
-        if (hasFocus) goFullscreen()
-    }
-
-    private fun goFullscreen() {
-        window.decorView.systemUiVisibility =
-            (View.SYSTEM_UI_FLAG_LAYOUT_STABLE
-                    or View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
-                    or View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
-                    or View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
-                    or View.SYSTEM_UI_FLAG_FULLSCREEN
-                    or View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY)
-    }
+    private fun dp(value: Int): Int = (value * resources.displayMetrics.density).toInt()
 
     companion object {
-        private const val BASE_URL = "https://web.nfsmwo.com/"
+        private const val GAME_URL = "https://web.nfsmwo.com/"
+        private const val CHROME_PACKAGE = "com.android.chrome"
     }
 }

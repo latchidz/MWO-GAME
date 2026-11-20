@@ -1,15 +1,15 @@
 # NFS Most Wanted — غلاف أندرويد أصلي
 
 تطبيق أندرويد يفتح لعبة **Need for Speed: Most Wanted (2005)** من `web.nfsmwo.com`
-داخل WebView أصلي، مع أهم اشتراطات المستخدم:
+في Chrome Custom Tab (Chromium كامل) بدل Android WebView، لأن الموقع رفض سياق التشغيل الحالي.
 
 | الاشتراك | كيف تحقق |
 |---|---|
-| **يفتح مباشرة على single player** | لا صفحة وسيطة؛ التطبيق يحمّل اللعبة فورًا ويكمل الجلسة المحفوظة |
-| **تحميل الموارد مرة واحدة** | WebView يخزّن ملفات اللعبة (~2GB) في `data/data/com.latchi.mwo` — لا يُعاد التحميل |
-| **اللعبة تبقى شغالة** | `onPause` يحفظ الـ cookies/localStorage فقط، ولا يمسح الكاش ولا يدمّر الـ WebView |
-| **أفقي** | `sensorLandscape` + fullscreen + `KEEP_SCREEN_ON` |
-| **رجوع ذكي** | زر الرجوع لا يُغلق التطبيق |
+| **يفتح اللعبة فورًا** | يفتح `web.nfsmwo.com` في Chrome Custom Tab؛ اختيار single player يتم من واجهة الموقع إذا طلبه |
+| **موارد أونلاين** | التخزين في Chrome/المتصفح المشترك؛ يبقى عادةً بين الفتحات، لكن Chrome قد يحذف Cache تحت ضغط المساحة، فلا أضمن عدم إعادة تنزيل كل ملف في كل ظرف |
+| **المتصفح الكامل** | لا Android WebView: اللعبة تحتاج سياق متصفح علوي حديث لتشغيل WebAssembly المعزول |
+| **الأفقي** | شاشة التطبيق Landscape، واللعبة/Chrome يطبّقان اتجاه العرض المناسب أثناء اللعب |
+| **أيقونة خاصة** | رسم سيارة سباق ليلية مخصص مع علامة MW، ضمن موارد launcher وadaptive icon |
 
 ## البناء
 Codemagic فقط (⛔ GitHub Actions): workflow `android-release-build`
