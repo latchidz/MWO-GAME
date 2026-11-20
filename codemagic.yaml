@@ -1,0 +1,48 @@
+workflows:
+  android-release-build:
+    name: NFS Most Wanted — Release APK
+    max_build_duration: 60
+    instance_type: mac_mini_m2
+
+    environment:
+      java: 17
+      groups:
+        - release   # يُستعمل فقط لنشر الـ Release على GitHub (اختياري)
+
+    scripts:
+      - name: Verify project
+        script: |
+          pwd
+          ls -la
+          test -f ./gradlew || (echo "ERROR: gradlew missing" && exit 1)
+          test -f ./latchi.jks || (echo "ERROR: keystore missing" && exit 1)
+          echo "✓ project ok"
+
+      - name: Prepare Gradle
+        script: |
+          chmod +x ./gradlew
+          rm -f local.properties
+          rm -rf .idea app/build build .gradle
+
+      - name: Build signed APK
+        script: |
+          BUILD_VERSION_CODE="${BUILD_VERSION_CODE:-2026083101}"
+          BUILD_VERSION_NAME="${BUILD_VERSION_NAME:-1.0.0}"
+          export BUILD_VERSION_CODE BUILD_VERSION_NAME
+          echo "versionCode=$BUILD_VERSION_CODE versionName=$BUILD_VERSION_NAME"
+          ./gradlew assembleRelease --no-daemon --stacktrace
+
+      - name: Collect artifact
+        script: |
+          mkdir -p dist
+          find app/build/outputs/apk/release -name "*.apk" -exec cp {} dist/MWO_GAME.apk \;
+          ls -lh dist/
+
+    artifacts:
+      - dist/*.apk
+
+    publishing:
+      github:
+        # إن كان GITHUB_TOKEN صالحًا في مجموعة release سيُنشئ Release تلقائيًا.
+        # إن فشل، لا يتأثر البناء — الـ APK يبقى في artifacts.
+        disabled: true
