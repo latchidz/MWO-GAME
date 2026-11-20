@@ -40,9 +40,3 @@ workflows:
 
     artifacts:
       - dist/*.apk
-
-    publishing:
-      github:
-        # إن كان GITHUB_TOKEN صالحًا في مجموعة release سيُنشئ Release تلقائيًا.
-        # إن فشل، لا يتأثر البناء — الـ APK يبقى في artifacts.
-        disabled: true
