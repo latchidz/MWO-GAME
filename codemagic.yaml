@@ -26,8 +26,8 @@ workflows:
 
       - name: Build signed APK
         script: |
-          BUILD_VERSION_CODE="${BUILD_VERSION_CODE:-2026083102}"
-          BUILD_VERSION_NAME="${BUILD_VERSION_NAME:-1.0.1}"
+          BUILD_VERSION_CODE="${BUILD_VERSION_CODE:-2026083103}"
+          BUILD_VERSION_NAME="${BUILD_VERSION_NAME:-1.1.0}"
           export BUILD_VERSION_CODE BUILD_VERSION_NAME
           echo "versionCode=$BUILD_VERSION_CODE versionName=$BUILD_VERSION_NAME"
           ./gradlew assembleRelease --no-daemon --stacktrace

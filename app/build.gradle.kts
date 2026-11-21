@@ -5,14 +5,14 @@ plugins {
 
 android {
     namespace = "com.latchi.mwo"
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.latchi.mwo"
         minSdk = 21
         targetSdk = 34
-        versionCode = (System.getenv("BUILD_VERSION_CODE")?.toIntOrNull() ?: 2026083102)
-        versionName = (System.getenv("BUILD_VERSION_NAME") ?: "1.0.1")
+        versionCode = (System.getenv("BUILD_VERSION_CODE")?.toIntOrNull() ?: 2026083103)
+        versionName = (System.getenv("BUILD_VERSION_NAME") ?: "1.1.0")
     }
 
     signingConfigs {
@@ -39,12 +39,13 @@ android {
     }
 
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_1_8
-        targetCompatibility = JavaVersion.VERSION_1_8
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
     }
-    kotlinOptions { jvmTarget = "1.8" }
+    kotlinOptions { jvmTarget = "17" }
 }
 
 dependencies {
-    implementation("androidx.browser:browser:1.8.0")
+    // ARM64 GeckoView browser engine (Firefox), embedded in the app.
+    implementation("org.mozilla.geckoview:geckoview-arm64-v8a:150.0.20260511200624")
 }

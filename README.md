@@ -1,21 +1,15 @@
-# NFS Most Wanted — غلاف أندرويد أصلي
+# NFS Most Wanted — fullscreen Android game launcher
 
-تطبيق أندرويد يفتح لعبة **Need for Speed: Most Wanted (2005)** من `web.nfsmwo.com`
-في Chrome Custom Tab (Chromium كامل) بدل Android WebView، لأن الموقع رفض سياق التشغيل الحالي.
+This ARM64 Android app embeds Mozilla GeckoView (Firefox engine) directly inside the Activity. It does not launch Chrome or Android WebView. The site sends COOP/COEP headers and its own error page says it cannot run in blocked embedded contexts; GeckoView provides a full browser engine in an app-owned, fullscreen surface.
 
-| الاشتراك | كيف تحقق |
-|---|---|
-| **يفتح اللعبة فورًا** | يفتح `web.nfsmwo.com` في Chrome Custom Tab؛ اختيار single player يتم من واجهة الموقع إذا طلبه |
-| **موارد أونلاين** | التخزين في Chrome/المتصفح المشترك؛ يبقى عادةً بين الفتحات، لكن Chrome قد يحذف Cache تحت ضغط المساحة، فلا أضمن عدم إعادة تنزيل كل ملف في كل ظرف |
-| **المتصفح الكامل** | لا Android WebView: اللعبة تحتاج سياق متصفح علوي حديث لتشغيل WebAssembly المعزول |
-| **الأفقي** | شاشة التطبيق Landscape، واللعبة/Chrome يطبّقان اتجاه العرض المناسب أثناء اللعب |
-| **أيقونة خاصة** | رسم سيارة سباق ليلية مخصص مع علامة MW، ضمن موارد launcher وadaptive icon |
+## Launch behavior
+- Opens `https://web.nfsmwo.com/` directly, with Android Activity locked to landscape and immersive screen flags.
+- A small built-in WebExtension looks for the visible, exact `Single player` button and presses it once. If the page structure changes or synthetic activation is rejected, the website remains available so the user can tap its own button.
+- The game is cloud/web hosted; no copyrighted game data is bundled in this APK. The first game start can fetch about 2 GB and requires internet/Wi-Fi.
+- Game files, browser cache, and local saves remain in GeckoView's app-private browser profile. Android may clear cache under storage pressure; this is not an offline game guarantee.
 
-## البناء
-Codemagic فقط (⛔ GitHub Actions): workflow `android-release-build`
-- توقيع: `latchi.jks` (نفس مفتاح LATCHI ⇒ تحديث نظيف)
-- المخرجات: `dist/MWO_GAME.apk`
+## Controller support
+The site says game controllers work in its menus and while driving. GeckoView/Firefox Gamepad API receives controllers that Android recognizes, including standard Bluetooth HID and USB/OTG controllers. Pair a Bluetooth controller in Android settings or connect a USB controller before launching. Compatibility still depends on the controller exposing a standard Android gamepad profile; no app can promise every proprietary model.
 
-## ملاحظة صريحة
-اللعبة مملوكة لـ EA/Plak، وهذا التطبيق **غلاف عرض** لا يُوزَّع بموارده؛
-كل الموارد تُحمَّل مباشرة من `web.nfsmwo.com` أثناء التشغيل.
+## Build
+Codemagic only (no GitHub Actions). GeckoView 150 ARM64 artifact. The APK is signed with the same key used by previous MWO versions so it can update the existing app.

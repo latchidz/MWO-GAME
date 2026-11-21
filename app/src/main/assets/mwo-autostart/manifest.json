@@ -1,0 +1,19 @@
+{
+  "manifest_version": 2,
+  "name": "MWO Single Player Starter",
+  "version": "1.0.0",
+  "description": "Selects the game's Single player option on the official MWO site.",
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "mwo-single-player@latchi.app",
+      "strict_min_version": "120.0"
+    }
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://web.nfsmwo.com/*"],
+      "js": ["autostart.js"],
+      "run_at": "document_idle"
+    }
+  ]
+}
