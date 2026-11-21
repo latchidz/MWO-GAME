@@ -47,8 +47,8 @@ class MainActivity : Activity() {
         browser.webExtensionController
             .ensureBuiltIn(AUTOSTART_EXTENSION, AUTOSTART_ID)
             .accept(
-                { _: WebExtension -> openGame(browser) },
-                { _: Throwable -> openGame(browser) }
+                { _: WebExtension? -> openGame(browser) },
+                { _: Throwable? -> openGame(browser) }
             )
     }
 
