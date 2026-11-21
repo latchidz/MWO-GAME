@@ -11,5 +11,7 @@ This ARM64 Android app embeds Mozilla GeckoView (Firefox engine) directly inside
 ## Controller support
 The site says game controllers work in its menus and while driving. GeckoView/Firefox Gamepad API receives controllers that Android recognizes, including standard Bluetooth HID and USB/OTG controllers. Pair a Bluetooth controller in Android settings or connect a USB controller before launching. Compatibility still depends on the controller exposing a standard Android gamepad profile; no app can promise every proprietary model.
 
-## Build
-Codemagic only (no GitHub Actions). GeckoView 150 ARM64 artifact. The APK is signed with the same key used by previous MWO versions so it can update the existing app.
+## Requirements and build
+- Android 8.0 or newer (API 26+); GeckoView 150 ARM64 artifact.
+- Codemagic only (no GitHub Actions).
+- The APK is signed with the same key used by previous MWO versions so it can update the existing app.

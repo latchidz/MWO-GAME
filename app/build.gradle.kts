@@ -9,7 +9,7 @@ android {
 
     defaultConfig {
         applicationId = "com.latchi.mwo"
-        minSdk = 21
+        minSdk = 26
         targetSdk = 34
         versionCode = (System.getenv("BUILD_VERSION_CODE")?.toIntOrNull() ?: 2026083103)
         versionName = (System.getenv("BUILD_VERSION_NAME") ?: "1.1.0")
