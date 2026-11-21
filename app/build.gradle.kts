@@ -15,6 +15,14 @@ android {
         versionName = (System.getenv("BUILD_VERSION_NAME") ?: "1.1.0")
     }
 
+    // GeckoView's native engine is large but highly compressible; compress it
+    // in the APK and let Android extract it on install for a smaller download.
+    packaging {
+        jniLibs {
+            useLegacyPackaging = true
+        }
+    }
+
     signingConfigs {
         create("release") {
             storeFile = file("${rootProject.projectDir}/latchi.jks")
